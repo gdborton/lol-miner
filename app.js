@@ -121,6 +121,7 @@ function updateSummonersGames(){
                                 game.players.push(fellowPlayer.summonerId);
                                 if (summonersProcessed.indexOf(summonerId) <= 0) {
                                     summonerQueue.push(fellowPlayer.summonerId);
+                                    gameQueue.push(fellowPlayer.summonerId);
                                 }
                             });
                             delete game.fellowPlayers;
@@ -146,14 +147,18 @@ function updateSummonersGames(){
         request.end();
     }
 }
+function dedupe() {
+    function deduper (v, i, a) {
+        return a.indexOf(v) == i;
+    }
 
-function dedupe (v, i, a) {
-    return a.indexOf(v) == i;
+    summonerQueue = summonerQueue.filter(deduper);
+    summonersProcessed = summonersProcessed.filter(deduper);
+    gameQueue = gameQueue.filter(deduper);
 }
 
 function update(){
-    summonerQueue = summonerQueue.filter(dedupe);
-    gameQueue = gameQueue.filter(dedupe);
+    dedupe();
 
     limiter.removeTokens(1, function(){
         if (summonerQueue.length > 0) {
