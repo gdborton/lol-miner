@@ -65,10 +65,15 @@ function updateSummoners(){
             });
 
             res.on('end', function(){
-                var summoner = JSON.parse(total)[summonerId];
+                if (res.statusCode === 200) {
+                    var summoner = JSON.parse(total)[summonerId];
 
-                db.summoners.save(summoner);
-                console.log('Summoner saved.', summonerId, 'Summoners in queue:', summonerQueue.length);
+                    db.summoners.save(summoner);
+                    console.log('Summoner saved.', summonerId, 'Summoners in queue:', summonerQueue.length);
+                } else {
+                    console.warn('Didn\'t get a 200 status code, instead found: ', res.statusCode ,' will retry summoner', summonerId, 'later.');
+                    summonerQueue.push(summonerId);
+                }
             });
         });
 
@@ -100,32 +105,37 @@ function updateSummonersGames(){
             });
 
             res.on('end', function(){
-                var games = JSON.parse(total).games;
+                if (res.statusCode === 200) {
+                    var games = JSON.parse(total).games;
 
-                games.forEach(function(game){
-                    game.players = [];
-                    game.players.push(summonerId);
+                    games.forEach(function(game){
+                        game.players = [];
+                        game.players.push(summonerId);
 
-                    var playerStats = {'gameId': game.gameId, 'summonerId': summonerId};
+                        var playerStats = {'gameId': game.gameId, 'summonerId': summonerId};
 
-                    if (game.fellowPlayers) {
-                        game.fellowPlayers.forEach(function(fellowPlayer){
-                            game.players.push(fellowPlayer.summonerId);
-                            summonerQueue.push(fellowPlayer.summonerId);
+                        if (game.fellowPlayers) {
+                            game.fellowPlayers.forEach(function(fellowPlayer){
+                                game.players.push(fellowPlayer.summonerId);
+                                summonerQueue.push(fellowPlayer.summonerId);
+                            });
+                            delete game.fellowPlayers;
+                        }
+
+                        playerSpecificStats.forEach(function(stat){
+                            playerStats[stat] = game[stat];
+                            delete game[stat];
                         });
-                        delete game.fellowPlayers;
-                    }
 
-                    playerSpecificStats.forEach(function(stat){
-                        playerStats[stat] = game[stat];
-                        delete game[stat];
+                        db.games.save(game);
+                        db.gamePlayerStats.save(playerStats);
                     });
 
-                    db.games.save(game);
-                    db.gamePlayerStats.save(playerStats);
-                });
-
-                console.log('Games saved: ', games.length, 'Summoner ID: ', summonerId, 'Games left in queue:', gameQueue.length);
+                    console.log('Games saved: ', games.length, 'Summoner ID: ', summonerId, 'Games left in queue:', gameQueue.length);
+                } else {
+                    console.warn('Didn\'t get a 200 status, instead found: ' + res.statusCode + 'will retry', summonerId, ' games later.');
+                    gameQueue.push(summonerId);
+                }
             });
         });
 
