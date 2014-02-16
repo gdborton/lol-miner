@@ -152,10 +152,10 @@ function update(){
     gameQueue = gameQueue.filter(dedupe);
 
     limiter.removeTokens(1, function(){
-        if (gameQueue.length > 0) {
-            updateSummonersGames();
-        } else if (summonerQueue.length > 0 ) {
+        if (summonerQueue.length > 0) {
             updateSummoners()
+        } else if (gameQueue.length > 0 ) {
+            updateSummonersGames();
         } else {
             updateChampions();
         }
