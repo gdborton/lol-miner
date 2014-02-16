@@ -119,9 +119,8 @@ function updateSummonersGames(){
                         if (game.fellowPlayers) {
                             game.fellowPlayers.forEach(function(fellowPlayer){
                                 game.players.push(fellowPlayer.summonerId);
-                                if (summonersProcessed.indexOf(summonerId) <= 0) {
+                                if (summonersProcessed.indexOf(fellowPlayer.summonerId) <= 0) {
                                     summonerQueue.push(fellowPlayer.summonerId);
-                                    gameQueue.push(fellowPlayer.summonerId);
                                 }
                             });
                             delete game.fellowPlayers;
@@ -161,10 +160,10 @@ function update(){
     dedupe();
 
     limiter.removeTokens(1, function(){
-        if (summonerQueue.length > 0) {
-            updateSummoners()
-        } else if (gameQueue.length > 0 ) {
+        if (gameQueue.length > 0) {
             updateSummonersGames();
+        } else if (summonerQueue.length > 0 ) {
+            updateSummoners();
         } else {
             updateChampions();
             console.log('Clearing the summoner processed list.');
