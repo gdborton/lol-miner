@@ -163,7 +163,7 @@ function update(){
         } else {
             updateChampions();
             console.log('Clearing the summoner processed list.');
-            summonerQueue.push(summonersProcessed);
+            summonerQueue = summonersProcessed;
             summonersProcessed = [];
         }
         update();
