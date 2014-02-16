@@ -112,7 +112,6 @@ function updateSummonersGames(){
                         game.fellowPlayers.forEach(function(fellowPlayer){
                             game.players.push(fellowPlayer.summonerId);
                             summonerQueue.push(fellowPlayer.summonerId);
-                            gameQueue.push(fellowPlayer.summonerId);
                         });
                         delete game.fellowPlayers;
                     }
