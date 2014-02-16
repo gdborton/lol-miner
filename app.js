@@ -2,7 +2,7 @@ var http = require('http');
 var mongo = require('mongojs');
 var RateLimiter = require('limiter').RateLimiter;
 
-var limiter = new RateLimiter(1, 1500);
+var limiter = new RateLimiter(1, 1190);
 
 var collections = ['champions', 'summoners', 'games', 'gamePlayerStats'];
 var dburl = process.env.DB_URL;
