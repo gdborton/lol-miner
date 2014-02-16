@@ -1,0 +1,9 @@
+{
+  "name": "lol-miner",
+  "version": "v0.0.1",
+  "private": true,
+  "dependencies": {
+    "mongojs": "~0.10.0",
+    "limiter": "~1.0.5"
+  }
+}
