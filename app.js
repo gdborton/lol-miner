@@ -10,6 +10,7 @@ var apiKey = process.env.API_KEY;
 
 var db = mongo(dburl, collections);
 var summonerQueue = [19012493];
+var summonersProcessed = [];
 var gameQueue = [];
 
 function updateChampions() {
@@ -69,7 +70,8 @@ function updateSummoners(){
                     var summoner = JSON.parse(total)[summonerId];
 
                     db.summoners.save(summoner);
-                    console.log('Summoner saved.', summonerId, 'Summoners in queue:', summonerQueue.length);
+                    summonersProcessed.push(summonerId);
+                    console.log('Summoner saved.', summonerId, 'Summoners in queue:', summonerQueue.length, 'Summoners processed:', summonersProcessed.length);
                 } else {
                     console.warn('Didn\'t get a 200 status code, instead found: ', res.statusCode ,' will retry summoner', summonerId, 'later.');
                     summonerQueue.push(summonerId);
@@ -117,7 +119,9 @@ function updateSummonersGames(){
                         if (game.fellowPlayers) {
                             game.fellowPlayers.forEach(function(fellowPlayer){
                                 game.players.push(fellowPlayer.summonerId);
-                                summonerQueue.push(fellowPlayer.summonerId);
+                                if (summonersProcessed.indexOf(summonerId) <= 0) {
+                                    summonerQueue.push(fellowPlayer.summonerId);
+                                }
                             });
                             delete game.fellowPlayers;
                         }
@@ -158,6 +162,9 @@ function update(){
             updateSummonersGames();
         } else {
             updateChampions();
+            console.log('Clearing the summoner processed list.');
+            summonerQueue.push(summonersProcessed);
+            summonersProcessed = [];
         }
         update();
     });
