@@ -158,7 +158,6 @@ function dedupe() {
 
 function update(){
     dedupe();
-
     limiter.removeTokens(1, function(){
         if (gameQueue.length > 0) {
             updateSummonersGames();
@@ -170,8 +169,7 @@ function update(){
             summonerQueue = summonersProcessed;
             summonersProcessed = [];
         }
-        update();
     });
 }
 
-update();
+setInterval(update, 1190);
