@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "mongojs": "~0.10.0",
-    "limiter": "~1.0.5"
+    "limiter": "~1.0.5",
+    "request": "~2.33.0"
   }
 }
