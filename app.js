@@ -2,6 +2,11 @@ var request = require('request');
 var mongo = require('mongojs');
 var RateLimiter = require('limiter').RateLimiter;
 
+require('nodetime').profile({
+    accountKey: process.env.NODE_TIME_KEY,
+    appName: 'lol-miner'
+});
+
 var limiter = new RateLimiter(1, 1190);
 
 var collections = ['champions', 'summoners', 'games', 'gamePlayerStats'];
