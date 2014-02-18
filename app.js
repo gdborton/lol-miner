@@ -108,7 +108,7 @@ function dedupe() {
     summonerQueue = summonerQueue.filter(deduper);
     summonersProcessed = summonersProcessed.filter(deduper);
     gameQueue = gameQueue.filter(deduper);
-    setTimeout(dedupe, summonerQueue * 1000);
+    setTimeout(dedupe, summonerQueue.length * 900);
 }
 
 function update(){
