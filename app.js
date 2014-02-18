@@ -42,7 +42,6 @@ function updateSummoners(){
                 var summoner = JSON.parse(body)[summonerId];
                 db.summoners.save(summoner);
                 summonersProcessed.push(summonerId);
-                console.log('Summoner saved.', summonerId, 'Summoners in queue:', summonerQueue.length, 'Summoners processed:', summonersProcessed.length);
             } else {
                 console.warn('Didn\'t get a 200 status code, instead found: ', res.statusCode ,' will retry summoner', summonerId, 'later.');
                 summonerQueue.push(summonerId);
@@ -88,8 +87,6 @@ function updateSummonersGames(){
                     db.games.save(game);
                     db.gamePlayerStats.save(playerStats);
                 });
-
-                console.log('Games saved: ', games.length, 'Summoner ID: ', summonerId, 'Games left in queue:', gameQueue.length);
             } else {
                 console.warn('Didn\'t get a 200 status, instead found:', res.statusCode,  'will retry', summonerId + '\'s', 'games later.');
                 gameQueue.push(summonerId);
@@ -124,4 +121,11 @@ function update(){
     });
 }
 
+function reportStatus() {
+    console.log('Summoners in the summonerQueue:', summonerQueue.length + '.', 'Summoners processed:', summonersProcessed.length + '.');
+    console.log('Games left in queue:', gameQueue.length);
+}
+
 setInterval(update, 1190);
+setInterval(reportStatus, 10000);
+
