@@ -108,10 +108,10 @@ function dedupe() {
     summonerQueue = summonerQueue.filter(deduper);
     summonersProcessed = summonersProcessed.filter(deduper);
     gameQueue = gameQueue.filter(deduper);
+    setTimeout(dedupe, summonerQueue * 1000);
 }
 
 function update(){
-    dedupe();
     limiter.removeTokens(1, function(){
         if (gameQueue.length > 0) {
             updateSummonersGames();
@@ -133,4 +133,4 @@ function reportStatus() {
 
 setInterval(update, 1190);
 setInterval(reportStatus, 10000);
-
+setTimeout(dedupe, 1000);
