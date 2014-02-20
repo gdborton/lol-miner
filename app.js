@@ -14,9 +14,16 @@ var dburl = process.env.DB_URL;
 var apiKey = process.env.API_KEY;
 
 var db = mongo(dburl, collections);
-var summonerQueue = [19012493];
+
+var summonerQueue = [];
 var summonersProcessed = [];
 var gameQueue = [];
+
+function resetQueue() {
+    summonerQueue = [19012493, 19028356, 605384, 204479, 21341176, 19027914];
+    summonersProcessed = [];
+    gameQueue = [];
+}
 
 function updateChampions() {
 
@@ -69,28 +76,30 @@ function updateSummonersGames(){
                 var games = JSON.parse(body).games;
 
                 games.forEach(function(game){
-                    game.players = [];
-                    game.players.push(summonerId);
+                    if(game.gameMode === 'ARAM') {
+                        game.players = [];
+                        game.players.push(summonerId);
 
-                    var playerStats = {'gameId': game.gameId, 'summonerId': summonerId};
+                        var playerStats = {'gameId': game.gameId, 'summonerId': summonerId};
 
-                    if (game.fellowPlayers) {
-                        game.fellowPlayers.forEach(function(fellowPlayer){
-                            game.players.push(fellowPlayer.summonerId);
-                            if (summonersProcessed.indexOf(fellowPlayer.summonerId) <= 0) {
-                                summonerQueue.push(fellowPlayer.summonerId);
-                            }
+                        if (game.fellowPlayers) {
+                            game.fellowPlayers.forEach(function(fellowPlayer){
+                                game.players.push(fellowPlayer.summonerId);
+                                if (summonersProcessed.indexOf(fellowPlayer.summonerId) <= 0) {
+                                    summonerQueue.push(fellowPlayer.summonerId);
+                                }
+                            });
+                            delete game.fellowPlayers;
+                        }
+
+                        playerSpecificStats.forEach(function(stat){
+                            playerStats[stat] = game[stat];
+                            delete game[stat];
                         });
-                        delete game.fellowPlayers;
+
+                        db.games.save(game);
+                        db.gamePlayerStats.save(playerStats);
                     }
-
-                    playerSpecificStats.forEach(function(stat){
-                        playerStats[stat] = game[stat];
-                        delete game[stat];
-                    });
-
-                    db.games.save(game);
-                    db.gamePlayerStats.save(playerStats);
                 });
             } else {
                 console.warn('Didn\'t get a 200 status, instead found:', res.statusCode,  'will retry', summonerId + '\'s', 'games later.');
@@ -131,6 +140,8 @@ function reportStatus() {
     console.log('Games left in queue:', gameQueue.length);
 }
 
+resetQueue();
+setInterval(resetQueue, 1000*60*60*4); // Reset every 4 hours to catch all 10 games of our original seeds.
 setInterval(update, 1190);
 setInterval(reportStatus, 10000);
 setTimeout(dedupe, 1000);
