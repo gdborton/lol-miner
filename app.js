@@ -1,17 +1,15 @@
-var request = require('request');
 var mongo = require('mongojs');
-var RateLimiter = require('limiter').RateLimiter;
+
+var Lawl = require('lawl');
+var lawl = new Lawl({ apiToken: process.env.API_KEY });
 
 require('nodetime').profile({
     accountKey: process.env.NODE_TIME_KEY,
     appName: 'lol-miner'
 });
 
-var limiter = new RateLimiter(1, 1190);
-
 var collections = ['champions', 'summoners', 'games', 'gamePlayerStats'];
 var dburl = process.env.DB_URL;
-var apiKey = process.env.API_KEY;
 
 var db = mongo(dburl, collections);
 
@@ -19,61 +17,56 @@ var summonerQueue = [];
 var summonersProcessed = [];
 var gameQueue = [];
 
-function resetQueue() {
+function resetQueue () {
     summonerQueue = [19012493, 19028356, 605384, 204479, 21341176, 19027914];
     summonersProcessed = [];
     gameQueue = [];
 }
 
-function updateChampions() {
-
-    var championUrl = 'https://prod.api.pvp.net/api/lol/static-data/na/v1/champion?api_key=' + apiKey;
-
-    request(championUrl, function(error, res, body){
-        if (!error && res.statusCode === 200 && body.length !== 0) {
-            var champions = JSON.parse(body).data;
+function updateChampions () {
+    lawl.getChampions(function (error, champions) {
+        if (!error){
+            champions = champions.champions;
             var championNames = Object.keys(champions);
-
             championNames.forEach(function(championName){
                 db.champions.save(champions[championName]);
             });
             console.log('Champions saved.', championNames.length);
+        } else {
+            console.log(error.message);
         }
     });
 }
 
-function updateSummoners(){
+function updateSummoners () {
     if (summonerQueue.length > 0) {
-        var summonerId = summonerQueue.shift();
-        gameQueue.push(summonerId);
+        var summonerIdsToFetch = summonerQueue.splice(0, 40); // The api can only handle 40 summoners at a time.
+        gameQueue = gameQueue.concat(summonerIdsToFetch);
 
-        var summonerUrl = 'https://prod.api.pvp.net/api/lol/na/v1.3/summoner/' + summonerId + '?api_key=' + apiKey;
-
-        request(summonerUrl, function(error, res, body){
-            if (!error && res.statusCode === 200 && body.length !== 0) {
-                var summoner = JSON.parse(body)[summonerId];
-                db.summoners.save(summoner);
-                summonersProcessed.push(summonerId);
+        lawl.getSummoners(summonerIdsToFetch, function (error, summoners) {
+            if (!error) {
+                var summonerIds = Object.keys(summoners); // The keys are the summonerIds.
+                summonerIds.forEach(function (summonerId) {
+                    db.summoners.save(summoners[summonerId]);
+                    summonersProcessed.push(summonerId);
+                });
             } else {
-                console.warn('Didn\'t get a 200 status code, instead found: ', res.statusCode ,' will retry summoner', summonerId, 'later.');
-                summonerQueue.push(summonerId);
+                console.log(error);
+                summonerQueue = summonerIdsToFetch.concat(summonerQueue);
             }
         });
     }
 }
 
-function updateSummonersGames(){
-    if(gameQueue.length > 0) {
+function updateSummonersGames () {
+    if (gameQueue.length > 0) {
         var summonerId = gameQueue.shift();
-
         // These are player specific things associated to the lol api games DTO.
         var playerSpecificStats = ['teamId', 'championId', 'spell1', 'spell2', 'level', 'stats'];
 
-        var gameUrl = 'https://prod.api.pvp.net/api/lol/na/v1.3/game/by-summoner/' + summonerId + '/recent?api_key=' + apiKey;
-
-        request(gameUrl, function(error, res, body){
-            if (!error && res.statusCode === 200 && body.length !== 0) {
-                var games = JSON.parse(body).games;
+        lawl.getRecentGamesBySummonerId(summonerId, function (error, returnObject) {
+            if (!error) {
+                var games = returnObject.games;
 
                 games.forEach(function(game){
                     if(game.gameMode === 'ARAM') {
@@ -102,7 +95,7 @@ function updateSummonersGames(){
                     }
                 });
             } else {
-                console.warn('Didn\'t get a 200 status, instead found:', res.statusCode,  'will retry', summonerId + '\'s', 'games later.');
+                console.log(error);
                 gameQueue.push(summonerId);
             }
         });
@@ -121,18 +114,11 @@ function dedupe() {
 }
 
 function update(){
-    limiter.removeTokens(1, function(){
-        if (gameQueue.length > 0) {
-            updateSummonersGames();
-        } else if (summonerQueue.length > 0 ) {
-            updateSummoners();
-        } else {
-            updateChampions();
-            console.log('Clearing the summoner processed list.');
-            summonerQueue = summonersProcessed;
-            summonersProcessed = [];
-        }
-    });
+    if (gameQueue.length > 0) {
+        updateSummonersGames();
+    } else if (summonerQueue.length > 0 ) {
+        updateSummoners();
+    }
 }
 
 function reportStatus() {
@@ -141,7 +127,8 @@ function reportStatus() {
 }
 
 resetQueue();
+setInterval(reportStatus, 5000);
 setInterval(resetQueue, 1000*60*60*4); // Reset every 4 hours to catch all 10 games of our original seeds.
-setInterval(update, 1190);
-setInterval(reportStatus, 10000);
+setInterval(update, 100);
 setTimeout(dedupe, 1000);
+updateChampions();

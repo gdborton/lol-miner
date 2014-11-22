@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "mongojs": "~0.10.0",
-    "limiter": "~1.0.5",
-    "request": "~2.33.0"
+    "nodetime": "^0.8.15",
+    "lawl": "~0.0.0"
   }
 }
